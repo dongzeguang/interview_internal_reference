@@ -1,0 +1,152 @@
+1、LRU算法设计
+
+package com.program;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+/**
+ * LRUCache算法：最近最少使用算法
+ * 核心算法实现：散列表+双向链表
+ * 算法核心功能：
+ * 1.添加缓存(先判断散列表中是否存在该缓存，如果存在，则将该缓存移动到链尾。
+ * 如果不存在，则先判断链表是否已经满了，如果满了则先把头结点删除，未满则直接插到链尾)
+ * 2.查找缓存(因为是散列表，所以时间复杂度，接近O(1))
+ * 3.删除缓存
+ 
+ * LRU算法
+ * LRU(Least Recently Used)，即最近最少使用算法。常用于实现一个简单的缓存功能，就是把很久未使用的直接移除掉，只保留最近使用的。
+ *
+ * LRU主要功能
+ * LRU主要需要实现两个功能
+ *
+ * 添加缓存(涉及到删除缓存)
+ * 获取缓存
+ * 实现原理
+ * 其实用一个单链表就能实现简单的LRU算法，但是链表的查找时间复杂度比较高了，是O(n)。其实用一个散列表+双链表就可以实现一个O(1)复杂度的LRU算法。用散列表就可以直接定位某个缓存，时间复杂度O(1)，但是散列表插入缓存之后，就没有了顺序，所以才需要一个链表来维护这个缓存的顺序，这样才能知道哪些缓存一直未使用，超过缓存最大容量之后需要删除未使用的缓存。而如果单链表删除某个缓存的话，又需要先遍历这个元素（时间复杂度O(n)）才行。所以这里用双链表，那么就可以通过散列表直接定位到这个缓存节点，然后知道这个缓存节点的前驱和后继节点就可以在O(1)时间复杂度内删除这个缓存了。
+ *
+ */
+public class LRUCache {
+    private int cacheSize = 10;
+    private HashMap<String, Node> map = new HashMap<>();
+    private Node head;
+    private Node tail;
+
+    public void LRUCache(int cacheSize) {
+        this.cacheSize = cacheSize;
+    }
+
+    /**
+     * 添加缓存
+     * 先判断是否已有该缓存，如果有则直接放到链尾取出，
+     * 如果没有，则判断是否已满，如果满了，删除链头数据，否则直接插到链尾
+     */
+    public void addCache(String key, String value) {
+        if (map.containsKey(key)) {
+            Node node = map.get(key);
+            if (node.next != null) {
+                if (node.pre == null) {
+                    head = node.next;
+                } else {
+                    node.pre.next = node.next;
+                    node.next.pre = node.pre;
+                }
+                tail.next = node;
+                node.pre = tail;
+                node.next = null;
+                tail = node;
+            }
+        } else {
+            Node node = new Node(key, value);
+            if (map.size() == cacheSize) {
+                Node temp = head;
+                head = head.next;
+                map.remove(temp.key);
+                node.pre = tail;
+                tail.next = node;
+                tail = node;
+            } else {
+                if (head == null) {
+                    head = node;
+                    tail = node;
+                } else {
+                    node.pre = tail;
+                    tail.next = node;
+                    tail = node;
+                }
+            }
+            map.put(key, node);
+        }
+    }
+
+    /**
+     * 获取缓存
+     * 先判断是否有缓存，如果有，需要把该缓存移动到链尾返回
+     */
+    public String getCache(String key) {
+        if (map.containsKey(key)) {
+            Node node = map.get(key);
+            if (node.next == null) {
+                return node.value;
+            }
+            if (node.pre == null) {
+                head = node.next;
+            } else {
+                node.pre.next = node.next;
+                node.next.pre = node.pre;
+            }
+            tail.next = node;
+            node.pre = tail;
+            node.next = null;
+            tail = node;
+            return node.value;
+        } else {
+            return null;
+        }
+    }
+
+    public void test() {
+        Iterator<Map.Entry<String, Node>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, Node> entry = iterator.next();
+            System.out.println(entry.getKey() + "--" + entry.getValue().value);
+        }
+    }
+
+    public void test2() {
+        Node temp = head;
+        while (temp != null) {
+            System.out.println(temp.key);
+            temp = temp.next;
+        }
+    }
+
+    public static void main(String[] args) {
+        LRUCache cache = new LRUCache();
+        cache.addCache("key0", "value0");
+        cache.addCache("key1", "value1");
+        cache.addCache("key2", "value2");
+        cache.addCache("key3", "value3");
+        cache.addCache("key4", "value4");
+        cache.addCache("key5", "value5");
+        cache.addCache("key6", "value6");
+        cache.addCache("key7", "value7");
+        cache.addCache("key8", "value8");
+        cache.addCache("key9", "value9");
+        cache.getCache("key9");
+        cache.test2();
+    }
+
+    class Node {
+        String key;
+        String value;
+        Node pre;
+        Node next;
+
+        public Node(String key, String value) {
+            this.key = key;
+            this.value = value;
+        }
+    }
+}
+
